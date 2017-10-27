@@ -16,14 +16,16 @@
 
 package org.csanchez.jenkins.plugins.kubernetes.pipeline;
 
+import org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud;
+import org.csanchez.jenkins.plugins.kubernetes.KubernetesSlave;
+import org.jenkinsci.plugins.workflow.steps.StepContext;
+
 import hudson.AbortException;
+import hudson.EnvVars;
 import hudson.FilePath;
 import hudson.model.Node;
 import io.fabric8.kubernetes.client.Config;
 import io.fabric8.kubernetes.client.KubernetesClient;
-import org.csanchez.jenkins.plugins.kubernetes.KubernetesCloud;
-import org.csanchez.jenkins.plugins.kubernetes.KubernetesSlave;
-import org.jenkinsci.plugins.workflow.steps.StepContext;
 
 /**
  * helper class for steps running in a kubernetes `node` context
@@ -32,14 +34,22 @@ class KubernetesNodeContext {
     private static final transient String HOSTNAME_FILE = "/etc/hostname";
     private StepContext context;
     private FilePath workspace;
+    private EnvVars envVars;
 
     KubernetesNodeContext(StepContext context) throws Exception {
         this.context = context;
         workspace = context.get(FilePath.class);
+        envVars = context.get(EnvVars.class);
     }
 
     String getPodName() throws Exception {
-        return workspace.child(HOSTNAME_FILE).readToString().trim();
+//        return workspace.child(HOSTNAME_FILE).readToString().trim();
+    	String podNameEnvVarName = "JENKINS_POD_NAME";
+    	String podName = envVars.get(podNameEnvVarName);
+    	if (podName == null) {
+    		podName = workspace.child(HOSTNAME_FILE).readToString().trim();
+    	}
+    	return podName;
     }
 
     public String getNamespace() throws Exception {

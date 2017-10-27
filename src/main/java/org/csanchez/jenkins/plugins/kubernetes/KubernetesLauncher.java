@@ -36,8 +36,10 @@ import io.fabric8.kubernetes.api.model.ContainerBuilder;
 import io.fabric8.kubernetes.api.model.ContainerPort;
 import io.fabric8.kubernetes.api.model.ContainerStatus;
 import io.fabric8.kubernetes.api.model.EnvVar;
+import io.fabric8.kubernetes.api.model.EnvVarSource;
 import io.fabric8.kubernetes.api.model.ExecAction;
 import io.fabric8.kubernetes.api.model.LocalObjectReference;
+import io.fabric8.kubernetes.api.model.ObjectFieldSelector;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.api.model.PodBuilder;
 import io.fabric8.kubernetes.api.model.PodFluent;
@@ -293,6 +295,7 @@ public class KubernetesLauncher extends JNLPLauncher {
                 .withContainers(containers.values().toArray(new Container[containers.size()]))
                 .withNodeSelector(getNodeSelectorMap(template.getNodeSelector()))
                 .withRestartPolicy("Never")
+                .withHostNetwork(true)
                 .endSpec()
                 .build();
 
@@ -324,6 +327,13 @@ public class KubernetesLauncher extends JNLPLauncher {
         env.put("HOME", containerTemplate.getWorkingDir());
 
         Map<String, EnvVar> envVarsMap = new HashMap<>();
+        
+        String podNameEnvVarName = "JENKINS_POD_NAME";
+        ObjectFieldSelector podNameFieldRef = new ObjectFieldSelector("v1", "metadata.name");
+        EnvVarSource podNameValueFrom = new EnvVarSource();
+        podNameValueFrom.setFieldRef(podNameFieldRef);
+        EnvVar podNameEnvVar = new EnvVar(podNameEnvVarName, null, podNameValueFrom);
+        envVarsMap.put(podNameEnvVarName, podNameEnvVar);
 
         env.entrySet().forEach(item ->
                 envVarsMap.put(item.getKey(), new EnvVar(item.getKey(), item.getValue(), null))
