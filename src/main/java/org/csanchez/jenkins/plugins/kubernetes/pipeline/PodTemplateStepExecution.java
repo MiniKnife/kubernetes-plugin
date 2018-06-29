@@ -130,7 +130,7 @@ public class PodTemplateStepExecution extends AbstractStepExecutionImpl {
                         new Object[] { step.getCloud(), podTemplate.getName() });
                 return;
             }
-            if (cloud instanceof KubernetesCloud) {
+            if (cloud instanceof KubernetesCloud && podTemplate.getIdleMinutes() == 0) {
                 LOGGER.log(Level.INFO, "Removing pod template and deleting pod {1} from cloud {0}",
                         new Object[] { cloud.name, podTemplate.getName() });
                 KubernetesCloud kubernetesCloud = (KubernetesCloud) cloud;

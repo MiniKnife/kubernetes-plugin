@@ -124,12 +124,16 @@ public class KubernetesLauncher extends JNLPLauncher {
         }
         KubernetesCloud cloud = slave.getKubernetesCloud();
         final PodTemplate unwrappedTemplate = slave.getTemplate();
+        
+        String podId = null;
+        String namespace = null;
+        KubernetesClient client = null;
         try {
-            KubernetesClient client = cloud.connect();
+            client = cloud.connect();
             Pod pod = getPodTemplate(slave, unwrappedTemplate);
 
-            String podId = pod.getMetadata().getName();
-            String namespace = StringUtils.defaultIfBlank(slave.getNamespace(), client.getNamespace());
+            podId = pod.getMetadata().getName();
+            namespace = StringUtils.defaultIfBlank(slave.getNamespace(), client.getNamespace());
 
             LOGGER.log(Level.FINE, "Creating Pod: {0} in namespace {1}", new Object[]{podId, namespace});
             pod = client.pods().inNamespace(namespace).create(pod);
@@ -223,10 +227,17 @@ public class KubernetesLauncher extends JNLPLauncher {
         } catch (Throwable ex) {
             LOGGER.log(Level.WARNING, String.format("Error in provisioning; slave=%s, template=%s", slave, unwrappedTemplate), ex);
             LOGGER.log(Level.FINER, "Removing Jenkins node: {0}", slave.getNodeName());
+            if (StringUtils.isNotEmpty(podId) && client != null) {
+	            try {
+	            	client.pods().inNamespace(namespace).withName(podId).delete();
+	            } catch (Exception e) {
+	                LOGGER.log(Level.WARNING, "Unable to remove pod: {0} in namespace {1}", new Object[]{podId, namespace, e});
+	            }
+            }
             try {
-                Jenkins.getInstance().removeNode(slave);
+            	Jenkins.getInstance().removeNode(slave);
             } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Unable to remove Jenkins node", e);
+            	LOGGER.log(Level.WARNING, "Unable to remove Jenkins node", e);
             }
             throw Throwables.propagate(ex);
         }
