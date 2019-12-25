@@ -145,7 +145,7 @@ public class KubernetesLauncher extends JNLPLauncher {
             List<String> validStates = ImmutableList.of("Running");
 
             int i = 0;
-            int j = 100; // wait 600 seconds
+            int j = unwrappedTemplate.getSlaveConnectTimeout(); // wait 600 seconds
 
             List<ContainerStatus> containerStatuses = null;
 
@@ -229,9 +229,10 @@ public class KubernetesLauncher extends JNLPLauncher {
             LOGGER.log(Level.FINER, "Removing Jenkins node: {0}", slave.getNodeName());
             if (StringUtils.isNotEmpty(podId) && client != null) {
 	            try {
+	            	LOGGER.log(Level.INFO, "Remove pod {0}/{1} from cloud {2}", new Object[]{namespace, podId, client});
 	            	client.pods().inNamespace(namespace).withName(podId).delete();
 	            } catch (Exception e) {
-	                LOGGER.log(Level.WARNING, "Unable to remove pod: {0} in namespace {1}", new Object[]{podId, namespace, e});
+	                LOGGER.log(Level.WARNING, "Unable to remove pod {0}{1}", new Object[]{namespace, podId, e});
 	            }
             }
             try {
